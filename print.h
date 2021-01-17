@@ -142,9 +142,6 @@ namespace python_like_print{
 			}
 			vectorizable_collection(int size): C(size), _size(size){
 			}
-			inline int size(){
-				return _size;
-			}
 			inline vector<S> to_vector() const{
 				// AtCoderライブラリの値を取得するメソッドが非constな場合があるので、コピーを作ってからアクセスする必要がある(非効率)
 				C collection_tmp(*this);

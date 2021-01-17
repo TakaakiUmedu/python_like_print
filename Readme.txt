@@ -1,4 +1,4 @@
-Python風のprint()をC++で定義したもの ver.1.1
+Python風のprint()をC++で定義したもの ver.1.4
 
 【使い方】
 // ↓ここから
@@ -74,3 +74,13 @@ ver.1.2
 ・引数無しでprint();と呼び出した時にコンパイルエラーになっていたのを修正
 ・printe()の出力先を間違っていたのを修正
 ・「#includeの仕方」を調整して、競プロサイトへ投稿したら(-DUSE_PYTHON_LIKE_PRINTを付けずにコンパイルしたら)コンパイルエラーになる可能性を潰した
+
+ver.1.3
+・デバッグ
+
+ver.1.4
+・AtCoder Library( https://github.com/atcoder/ac-library )への対応を強化。Modint、DSU、Fenwick Tree、Lazy Segment Treee、Segment Treeeをprint()できるようにした。
+　AtCoder Libraryの各ヘッダファイルをインクルードした後でprint.hをインクルードすると使えるようになる。
+　ただしFenwick Tree、Lazy Segment Treee、Segment Treeeは、to_vector()メソッドを追加して、print()に対応させた拡張クラスを*_vectorizableとして定義し、
+　#defineでソースコード上の元々のクラスの参照をそれらで置き換えるようにした強引な実装(実装に必要となる_nがprivateなので)。
+　print.hをインクルードしなければ元通りの動作に戻る。

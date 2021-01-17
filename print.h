@@ -119,8 +119,90 @@ template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std:
 	python_like_print::print_to_stream<SEP, END, A...>(out, args...);
 }
 
+// AtCoderライブラリのクラスにget(index)メソッドや、to_vector()メソッドを生やし、print()で表示できるようにするための拡張・置き換え用クラス
+namespace python_like_print{
+	// get(index)を生やす
+	template<class S, class C, S _get(C&, int)> class gettable_collection: public C{
+		public:
+			gettable_collection(): C(){
+			}
+			gettable_collection(int size): C(size){
+			}
+			S get(int index){
+				return _get(*this, index);
+			}
+	};
+	
+	// to_vector()のため、size()を生やす(_nがprivateで外からアクセス出来ないため)
+	template<class S, class C> class vectorizable_collection: public C{
+		private:
+			int _size;
+		public:
+			vectorizable_collection(): C(), _size(0){
+			}
+			vectorizable_collection(int size): C(size), _size(size){
+			}
+			inline int size(){
+				return _size;
+			}
+			inline vector<S> to_vector() const{
+				// AtCoderライブラリの値を取得するメソッドが非constな場合があるので、コピーを作ってからアクセスする必要がある(非効率)
+				C collection_tmp(*this);
+				std::vector<S> vec(_size);
+				for(int i = 0; i < _size; i ++){
+					vec[i] = collection_tmp.get(i);
+				}
+				return vec;
+			}
+			template<class T2, class C2> friend ostream& operator<<(ostream& out, vectorizable_collection<T2, C2> value);
+	};
+	template<class S, class C> inline ostream& operator<<(ostream& out, vectorizable_collection<S, C> value){
+		print_complex_item(out, value.to_vector());
+		return out;
+	}
+}
+
+// AtCoderライブラリのFenwick Tree、Lazy Segment Treee、Segment Treeeをprint()で表示できるようにする
+// そのままでは無理なので、vectorizableなバージョンを定義して、defineで置き換えてしまう
+namespace atcoder{
+#ifdef ATCODER_FENWICKTREE_HPP
+	template<class S> get_fenwick_tree_value(fenwick_tree<S>& ft, int index){
+		return ft.sum(index, index + 1);
+	}
+	template<class S> using fenwick_tree_vectorizable = python_like_print::vectorizable_collection<S, python_like_print::gettable_collection<S, fenwick_tree<S>, get_fenwick_tree_value<S>>>;
+#define fenwick_tree fenwick_tree_vectorizable
+#endif
+#ifdef ATCODER_LAZYSEGTREE_HPP
+	template <class S, S (*op)(S, S), S (*e)(), class F, S (*mapping)(F, S), F (*composition)(F, F), F (*id)()>
+		using lazy_segtree_vectorizable = python_like_print::vectorizable_collection<S, lazy_segtree<S, op, e, F, mapping, composition, id>>;
+#define lazy_segtree lazy_segtree_vectorizable
+#endif
+#ifdef ATCODER_SEGTREE_HPP
+	template <class S, S (*op)(S, S), S (*e)()> using segtree_vectorizable = python_like_print::vectorizable_collection<S, segtree<int, op, e>>;
+#define segtree segtree_vectorizable
+#endif
+}
+// ModIntやそのvectorなどをprint()できるようにする。
+namespace python_like_print{
+#ifdef ATCODER_MODINT_HPP
+	template<int m> inline ostream& operator<<(ostream& out, const atcoder::static_modint<m>& value){
+		return out << value.val();
+	}
+	template<int id> inline ostream& operator<<(ostream& out, const atcoder::dynamic_modint<id>& value){
+		return out << value.val();
+	}
+#endif
+#ifdef ATCODER_DSU_HPP
+	template<int mod> inline ostream& operator<<(ostream& out, const atcoder::dsu& value){
+		return out << value.groups();
+	}
+#endif
+}
+
+
 // 実装
 namespace python_like_print{
+
 	// 複合型としてを出力
 	
 	// 文字列は""で囲む

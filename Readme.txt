@@ -84,3 +84,4 @@ ver.1.4
 　ただしFenwick Tree、Lazy Segment Treee、Segment Treeeは、to_vector()メソッドを追加して、print()に対応させた拡張クラスを*_vectorizableとして定義し、
 　#defineでソースコード上の元々のクラスの参照をそれらで置き換えるようにした強引な実装(実装に必要となる_nがprivateなので)。
 　print.hをインクルードしなければ元通りの動作に戻る。
+・*_vectorizableクラスからsize()メソッドを削除。デバッグでしか効かないものがあるのは紛らわしいので。

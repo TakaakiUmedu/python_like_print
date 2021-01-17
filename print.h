@@ -193,8 +193,9 @@ namespace python_like_print{
 	}
 #endif
 #ifdef ATCODER_DSU_HPP
-	template<int mod> inline ostream& operator<<(ostream& out, const atcoder::dsu& value){
-		return out << value.groups();
+	inline ostream& operator<<(ostream& out, const atcoder::dsu& value){
+		print_complex_item(out, atcoder::dsu(value).groups());
+		return out;
 	}
 #endif
 }

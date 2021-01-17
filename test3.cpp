@@ -2,6 +2,8 @@
 #include <atcoder/fenwicktree>
 #include <atcoder/lazysegtree>
 #include <atcoder/segtree>
+#include <atcoder/modint>
+#include <atcoder/dsu>
 
 #include <string>
 #include <vector>
@@ -58,6 +60,21 @@ int main(void){
 	st.set(8, 2);
 	print(st);
 	print(st.all_prod());
+	
+	atcoder::modint1000000007 a(10), b(3);
+	
+	print(a + b, a.pow(100), a.pow(1000000007));
+	
+	atcoder::dsu dsu(10);
+	
+	dsu.merge(0, 5);
+	dsu.merge(5, 2);
+	dsu.merge(1, 3);
+	print(dsu);
+	dsu.merge(3, 4);
+	dsu.merge(5, 3);
+	dsu.merge(6, 8);
+	print(dsu);
 	
 	return 0;
 }

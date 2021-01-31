@@ -4,9 +4,16 @@
 /*** „§‚·‚éinclude‚Ìd•û
 
 // «‚±‚±‚©‚ç
+//#include <atcoder/segtree>
+//#include <atcoder/lazysegtree>
+//#include <atcoder/fenwicktree>
+//#include <atcoder/modint>
+//#include <atcoder/dsu>
+
 #include <string>
 #include <vector>
 #include <iostream>
+#include <tuple>
 #ifdef USE_PYTHON_LIKE_PRINT
 #include "print.h"
 #else

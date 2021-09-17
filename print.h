@@ -17,9 +17,9 @@
 #ifdef USE_PYTHON_LIKE_PRINT
 #include "print.h"
 #else
-template<char SEP = ' ', char END = '\n'> inline void print(...){}
-template<char SEP = ' ', char END = '\n'> inline void printe(...){}
-template<char SEP = ' ', char END = '\n'> inline void printo(...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void print(A& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printe(A& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printo(A& ...){}
 #define define_print(...)
 #define define_print_with_names(...)
 #define define_to_tuple(...)
@@ -28,17 +28,19 @@ template<char SEP = ' ', char END = '\n'> inline void printo(...){}
 
  ***/
 
+#include <algorithm>
+
 // Python風に標準出力に出力する。
 // SEP、ENDを付けるとそのように出力される。
 // SEPに''を指定するとエラーになる。指定したい場合には代わりにprint<'\0'>()とする。
 // ENDを付けたい場合、SEPは省略できない。
-template<char SEP = ' ', char END = '\n', typename ...A> inline void print(A ...args);
+template<char SEP = ' ', char END = '\n', typename ...A> inline void print(const A& ...args);
 
 // 同じものの標準エラーバージョン
-template<char SEP = ' ', char END = '\n', typename ...A> inline void printe(A ...args);
+template<char SEP = ' ', char END = '\n', typename ...A> inline void printe(const A& ...args);
 
 // 同じものの出力先自由バージョン
-template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std::ostream& out, A ...args);
+template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std::ostream& out, const A& ...args);
 
 // classやstructの中身を表示できるようにする。
 // classやstructの ** 定義の中 ** で、
@@ -97,7 +99,7 @@ namespace python_like_print{
 	template<typename T, typename X = decltype(declval<T>().python_like_print(cout))>
 	                                          inline ostream& operator<<(ostream& out, const T& value);
 	
-	template<typename Iterator> inline void print_all(ostream& out, Iterator begin, Iterator end);
+	template<typename IteratorB, typename IteratorE> inline void print_all(ostream& out, IteratorB begin, IteratorE end);
 	template<size_t N = 0, typename ...T> inline void print_items_in_tuple(ostream &out, const tuple<T...>& tuple);
 	template<size_t N, typename T> inline void print_members_with_names(ostream& out, vector<string> names, const T& arg);
 	template<size_t N, typename F, typename ...T> inline void print_members_with_names(ostream& out, vector<string> names, const F& arg, T ...args);
@@ -105,24 +107,24 @@ namespace python_like_print{
 	                     inline void print_item(ostream& out, const string& value);
 	                     inline void print_item(ostream& out, const char* value);
 	                     inline void print_item(ostream& out, const char value);
-	template<typename T> inline void print_item(ostream& out, const T value);
+	template<typename T> inline void print_item(ostream& out, const T& value);
 	
 	template<char SEP, char END>                            inline void print_to_stream(ostream& out);
-	template<char SEP, char END, typename T, typename ...A> inline void print_to_stream(ostream& out, const T& value, A ...args);
+	template<char SEP, char END, typename T, typename ...A> inline void print_to_stream(ostream& out, const T& value, const A& ...args);
 }
 
 // 標準出力に出力する関数の実体
-template<char SEP = ' ', char END = '\n', typename ...A> inline void print(A ...args){
+template<char SEP = ' ', char END = '\n', typename ...A> inline void print(const A& ...args){
 	printo<SEP, END, A...>(std::cout, args...);
 }
 
 // 同じものの標準エラーバージョン
-template<char SEP = ' ', char END = '\n', typename ...A> inline void printe(A ...args){
+template<char SEP = ' ', char END = '\n', typename ...A> inline void printe(const A& ...args){
 	printo<SEP, END, A...>(std::cerr, args...);
 }
 
 // 同じものの出力先自由バージョン
-template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std::ostream& out, A ...args){
+template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std::ostream& out, const A& ...args){
 	python_like_print::print_to_stream<SEP, END, A...>(out, args...);
 }
 
@@ -286,7 +288,7 @@ namespace python_like_print{
 	}
 	
 	// .begin()から.end()までを", "区切りで出力する
-	template<typename Iterator> inline void print_all(ostream& out, Iterator begin, Iterator end){
+	template<typename IteratorB, typename IteratorE> inline void print_all(ostream& out, IteratorB begin, IteratorE end){
 		if(begin != end){
 			auto i = begin;
 			print_complex_item(out, *i);
@@ -309,7 +311,7 @@ namespace python_like_print{
 	}
 	
 	// それ以外は複合型として[]や{}や""や''を付けて処理
-	template<typename T> inline void print_item(ostream& out, const T value){
+	template<typename T> inline void print_item(ostream& out, const T& value){
 		print_complex_item(out, value);
 	}
 	
@@ -319,7 +321,7 @@ namespace python_like_print{
 		out << END;
 	}
 	// 1つ以上の引数がある場合は1つ目を出力してSEPを出力後、残りを出力
-	template<char SEP, char END, typename T, typename ...A> inline void print_to_stream(ostream& out, const T& value, A ...args){
+	template<char SEP, char END, typename T, typename ...A> inline void print_to_stream(ostream& out, const T& value, const A& ...args){
 		print_item(out, value);
 		if(SEP != '\0'){
 			out << SEP;
@@ -350,9 +352,7 @@ namespace python_like_print{
 		print_members_with_names<N + 1>(out, names, args...);
 	}
 	
-	
 }
-
 
 // splitとstripの実装
 //
@@ -419,5 +419,6 @@ namespace python_like_split_and_strip{
 		}
 	}
 }
+
 
 #endif

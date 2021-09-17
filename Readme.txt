@@ -2,15 +2,22 @@ Python風のprint()をC++で定義したもの ver.1.4
 
 【使い方】
 // ↓ここから
+//#include <atcoder/segtree>
+//#include <atcoder/lazysegtree>
+//#include <atcoder/fenwicktree>
+//#include <atcoder/modint>
+//#include <atcoder/dsu>
+
 #include <string>
 #include <vector>
 #include <iostream>
+#include <tuple>
 #ifdef USE_PYTHON_LIKE_PRINT
 #include "print.h"
 #else
-template<char SEP = ' ', char END = '\n'> inline void print(...){}
-template<char SEP = ' ', char END = '\n'> inline void printe(...){}
-template<char SEP = ' ', char END = '\n'> inline void printo(...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void print(A& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printe(A& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printo(A& ...){}
 #define define_print(...)
 #define define_print_with_names(...)
 #define define_to_tuple(...)
@@ -85,3 +92,8 @@ ver.1.4
 　#defineでソースコード上の元々のクラスの参照をそれらで置き換えるようにした強引な実装(実装に必要となる_nがprivateなので)。
 　print.hをインクルードしなければ元通りの動作に戻る。
 ・*_vectorizableクラスからsize()メソッドを削除。デバッグでしか効かないものがあるのは紛らわしいので。
+
+ver.1.4.1
+・const& の付け忘れを追加
+・begin()とend()の型が異なるiteratorに対応
+

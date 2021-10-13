@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 #ifdef USE_PYTHON_LIKE_PRINT
-#include "print.h"
+#include "print.hpp"
 #else
 template<char SEP = ' ', char END = '\n'> inline void print(...){}
 template<char SEP = ' ', char END = '\n'> inline void printe(...){}

@@ -25,7 +25,7 @@
 #include <vector>
 #include <iostream>
 #ifdef USE_PYTHON_LIKE_PRINT
-#include "print.h"
+#include "print.hpp"
 #else
 template<char SEP = ' ', char END = '\n'> inline void print(...){}
 template<char SEP = ' ', char END = '\n'> inline void printe(...){}
@@ -114,6 +114,8 @@ template<typename T = int> class range{
 };
 
 int main(void){
+	python_like_print::print_char_as_int = true;
+	
 	std::vector<int> hoge = {1, 2, 3};
 	std::list<std::string> fuga = {"x", "a", "z"};
 	std::vector<std::vector<int>> moge = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}};

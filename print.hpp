@@ -42,7 +42,7 @@ template<char SEP = ' ', char END = '\n', typename ...A> inline void printe(cons
 // 同じものの出力先自由バージョン
 template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std::ostream& out, const A& ...args);
 
-// classやstructの中身を表示できるようにする。
+// classやstructの中身を ostream& への << で出力できるようにする。
 // classやstructの ** 定義の中 ** で、
 //
 //    define_print( 表示させたいメンバをカンマ区切りで好きなだけ, ...)
@@ -83,18 +83,25 @@ template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std:
 
 // 宣言を纏めて
 namespace python_like_print{
-	using namespace std;
-	                                          inline void print_complex_item(ostream& out, const string& value);
-	                                          inline void print_complex_item(ostream& out, const char* value);
-	                                          inline void print_complex_item(ostream& out, char value);
-	template<typename First, typename Second> inline void print_complex_item(ostream& out, const pair<First, Second>& pair);
-	template<typename ...T>                   inline void print_complex_item(ostream &out, const tuple<T...>& tuple);
-	                                          inline void print_complex_item(ostream& out, bool value);
+	static bool print_char_as_int = false;
+	
+	using std::string, std::basic_ostream, std::ostream, std::cout, std::endl;
+	using std::pair, std::tuple, std::vector, std::tuple_size, std::get;
+	using std::declval, std::enable_if_t, std::is_same_v, std::remove_reference_t, std::is_lvalue_reference_v;
+	
+	                                          inline void print_item(ostream& out, const string& value);
+	                                          inline void print_item(ostream& out, const char* value);
+	                                          inline void print_item(ostream& out, char value);
+	template<typename First, typename Second> inline void print_item(ostream& out, const pair<First, Second>& pair);
+	template<typename ...T>                   inline void print_item(ostream &out, const tuple<T...>& tuple);
+	                                          inline void print_item(ostream& out, bool value);
 	template<template<typename, typename, typename...> class Map, typename Key, typename Value, typename ...Parameters, typename C = Map<Key, Value, Parameters...>, typename BeginFirstType = decltype(declval<C>().begin()->first), typename BeginSecondType = decltype(declval<C>().begin()->second), typename EndType = decltype(declval<C>().end())>
-	                                          inline void print_complex_item(ostream& out, const Map<Key, Value, Parameters...>& iterable);
-	template<template<typename...> class Iterable, typename ...Parameters, typename C = Iterable<Parameters...>, typename BeginType = decltype(declval<C>().begin()), typename EndType = decltype(declval<C>().end())>
-	                                          inline void print_complex_item(ostream& out, const Iterable<Parameters...>& iterable);
-	template<typename T>                      inline void print_complex_item(ostream& out, const T& value);
+	                                          inline void print_item(ostream& out, const Map<Key, Value, Parameters...>& iterable);
+
+	template<typename T, typename B = decltype(declval<T>().begin()), typename E = decltype(declval<T>().end()), typename I = decltype(declval<B>().operator++()), typename C = decltype(static_cast<bool>(declval<B>() != declval<E>())), typename V = decltype(*declval<B>())>
+	                                          inline void print_item(ostream& out, const T& t);
+	template<typename T, typename S = decltype(cout << declval<T>()), typename R = enable_if_t<is_same_v<remove_reference_t<S>, basic_ostream<char>> && is_lvalue_reference_v<S>>>
+	                                          inline void print_item(ostream& out, const T& value);
 	
 	template<typename T, typename X = decltype(declval<T>().python_like_print(cout))>
 	                                          inline ostream& operator<<(ostream& out, const T& value);
@@ -103,11 +110,6 @@ namespace python_like_print{
 	template<size_t N = 0, typename ...T> inline void print_items_in_tuple(ostream &out, const tuple<T...>& tuple);
 	template<size_t N, typename T> inline void print_members_with_names(ostream& out, vector<string> names, const T& arg);
 	template<size_t N, typename F, typename ...T> inline void print_members_with_names(ostream& out, vector<string> names, const F& arg, T ...args);
-	
-	                     inline void print_item(ostream& out, const string& value);
-	                     inline void print_item(ostream& out, const char* value);
-	                     inline void print_item(ostream& out, const char value);
-	template<typename T> inline void print_item(ostream& out, const T& value);
 	
 	template<char SEP, char END>                            inline void print_to_stream(ostream& out);
 	template<char SEP, char END, typename T, typename ...A> inline void print_to_stream(ostream& out, const T& value, const A& ...args);
@@ -154,7 +156,7 @@ namespace python_like_print{
 			inline vector<S> to_vector() const{
 				// AtCoderライブラリの値を取得するメソッドが非constな場合があるので、コピーを作ってからアクセスする必要がある(非効率)
 				C collection_tmp(*this);
-				std::vector<S> vec(_size);
+				vector<S> vec(_size);
 				for(int i = 0; i < _size; i ++){
 					vec[i] = collection_tmp.get(i);
 				}
@@ -163,7 +165,7 @@ namespace python_like_print{
 			template<class T2, class C2> friend ostream& operator<<(ostream& out, vectorizable_collection<T2, C2> value);
 	};
 	template<class S, class C> inline ostream& operator<<(ostream& out, vectorizable_collection<S, C> value){
-		print_complex_item(out, value.to_vector());
+		print_item(out, value.to_vector());
 		return out;
 	}
 }
@@ -200,7 +202,7 @@ namespace python_like_print{
 #endif
 #ifdef ATCODER_DSU_HPP
 	inline ostream& operator<<(ostream& out, const atcoder::dsu& value){
-		print_complex_item(out, atcoder::dsu(value).groups());
+		print_item(out, atcoder::dsu(value).groups());
 		return out;
 	}
 #endif
@@ -209,27 +211,30 @@ namespace python_like_print{
 
 // 実装
 namespace python_like_print{
-
-	// 複合型としてを出力
+	// 各種の値をそれらしく出力
 	
 	// 文字列は""で囲む
-	inline void print_complex_item(ostream& out, const string& value){
+	inline void print_item(ostream& out, const string& value){
 		out << '"' << value << '"';
 	}
-	inline void print_complex_item(ostream& out, const char* value){
+	inline void print_item(ostream& out, const char* value){
 		out << '"' << value << '"';
 	}
 	
-	// charは''で囲む
-	inline void print_complex_item(ostream& out, char value){
-		out << '\'' << value << '\'';
+	// charは''で囲む。あるいは整数値として出力
+	inline void print_item(ostream& out, char value){
+		if(print_char_as_int){
+			out << static_cast<int>(value);
+		}else{
+			out << '\'' << value << '\'';
+		}
 	}
 	
 	// pairは、:で区切って
-	template<typename First, typename Second> inline void print_complex_item(ostream& out, const pair<First, Second>& pair){
-		print_complex_item(out, pair.first);
+	template<typename First, typename Second> inline void print_item(ostream& out, const pair<First, Second>& pair){
+		print_item(out, pair.first);
 		out << ": ";
-		print_complex_item(out, pair.second);
+		print_item(out, pair.second);
 	}
 
 // tupleの中身を出力
@@ -239,45 +244,51 @@ namespace python_like_print{
 	template<size_t N = 0, typename ...T> inline void print_items_in_tuple(ostream &out, const tuple<T...>& item){
 		if constexpr(N < tuple_size<tuple<T...>>::value){
 			out << ", ";
-			print_complex_item(out, get<N>(item));
+			print_item(out, get<N>(item));
 			print_items_in_tuple<N + 1, T...>(out, item);
 		}
 	}
 	
-	// tupleは中身を", "で区切って'{'～'}'で囲って順に出力
-	template<typename ...T> inline void print_complex_item(ostream &out, const tuple<T...>& item){
-		out << '{';
+	// tupleは中身を", "で区切って'('～')'で囲って順に出力
+	template<typename ...T> inline void print_item(ostream &out, const tuple<T...>& item){
+		out << '(';
 		if constexpr(tuple_size<tuple<T...>>::value > 0){
-			print_complex_item(out, get<0>(item));
+			print_item(out, get<0>(item));
 			print_items_in_tuple<1, T...>(out, item);
 		}
-		out << '}';
+		out << ')';
 	}
 #endif
 	
 	// boolは"true"/"false"を出力
-	inline void print_complex_item(ostream& out, bool value){
+	inline void print_item(ostream& out, bool value){
 		out << (value ? "true" : "false");
 	}
 	
 	// mapのように、.begin()と.end()が付いていて、.begin()->firstと.begin()->secondがあるもの
 	template<template<typename, typename, typename...> class Map, typename Key, typename Value, typename ...Parameters, typename C = Map<Key, Value, Parameters...>, typename BeginFirstType = decltype(declval<C>().begin()->first), typename BeginSecondType = decltype(declval<C>().begin()->second), typename EndType = decltype(declval<C>().end())>
-	inline void print_complex_item(ostream& out, const Map<Key, Value, Parameters...>& iterable){
+	inline void print_item(ostream& out, const Map<Key, Value, Parameters...>& iterable){
 		out << '{';
 		print_all(out, iterable.begin(), iterable.end());
 		out << '}';
 	}
 	
 	// その他、.begin()と.end()が付いているもの
-	template<template<typename...> class Iterable, typename ...Parameters, typename C = Iterable<Parameters...>, typename BeginType = decltype(declval<C>().begin()), typename EndType = decltype(declval<C>().end())>
-	inline void print_complex_item(ostream& out, const Iterable<Parameters...>& iterable){
+	template<typename T,
+	         typename B = decltype(declval<T>().begin()),
+	         typename E = decltype(declval<T>().end()),
+	         typename I = decltype(declval<B>().operator++()),
+	         typename C = decltype(static_cast<bool>(declval<B>() != declval<E>())),
+	         typename V = decltype(*declval<B>())>
+	inline void print_item(ostream& out, const T& iterable){
 		out << '[';
 		print_all(out, iterable.begin(), iterable.end());
 		out << ']';
 	}
 	
 	// その他、<< で出力できるもの(できないものはエラー)
-	template<typename T> inline void print_complex_item(ostream& out, const T& value){
+	template<typename T, typename S = decltype(cout << declval<T>()), typename R = enable_if_t<is_same_v<remove_reference_t<S>, basic_ostream<char>> && is_lvalue_reference_v<S>>>
+	inline void print_item(ostream& out, const T& value){
 		out << value;
 	}
 	
@@ -291,63 +302,53 @@ namespace python_like_print{
 	template<typename IteratorB, typename IteratorE> inline void print_all(ostream& out, IteratorB begin, IteratorE end){
 		if(begin != end){
 			auto i = begin;
-			print_complex_item(out, *i);
+			print_item(out, *i);
 			for(++ i; i != end; ++ i){
 				out << ", ";
-				print_complex_item(out, *i);
+				print_item(out, *i);
 			}
 		}
-	}
-	
-	// 単品で文字列、文字を表示する場合は""や''で囲まずにそのまま出力
-	inline void print_item(ostream& out, const string& value){
-		out << value;
-	}
-	inline void print_item(ostream& out, const char* value){
-		out << value;
-	}
-	inline void print_item(ostream& out, const char value){
-		out << value;
-	}
-	
-	// それ以外は複合型として[]や{}や""や''を付けて処理
-	template<typename T> inline void print_item(ostream& out, const T& value){
-		print_complex_item(out, value);
 	}
 	
 	// 引数1つ1つをばらけさせる
 	// ばらけさせる残りが無ければENDだけ出力
 	template<char SEP, char END> inline void print_to_stream(ostream& out){
-		out << END;
+		if(END != '\0'){
+			out << END;
+		}
 	}
-	// 1つ以上の引数がある場合は1つ目を出力してSEPを出力後、残りを出力
+	// 2つ以上の引数がある場合は1つ目を出力してSEPを出力後、残りを出力
 	template<char SEP, char END, typename T, typename ...A> inline void print_to_stream(ostream& out, const T& value, const A& ...args){
 		print_item(out, value);
-		if(SEP != '\0'){
-			out << SEP;
+		if constexpr(sizeof...(A) > 0){
+			if(SEP != '\0'){
+				out << SEP;
+			}
+			print_to_stream<SEP, END, A...>(out, args...);
+		}else{
+			print_to_stream<SEP, END>(out);
 		}
-		print_to_stream<SEP, END, A...>(out, args...);
 	}
 	
 	// classやstructの中身を表示するためのヘルパ関数
 	template<typename T> inline void print_members(ostream& out, const T& arg){
-		print_complex_item(out, arg);
+		print_item(out, arg);
 	}
 	
 	template<typename F, typename ...T> inline void print_members(ostream& out, const F& arg, T ...args){
-		print_complex_item(out, arg);
+		print_item(out, arg);
 		out << ", ";
 		print_members(out, args...);
 	}
 	
 	template<size_t N, typename T> inline void print_members_with_names(ostream& out, vector<string> names, const T& arg){
 		out << names[N] << ": ";
-		print_complex_item(out, arg);
+		print_item(out, arg);
 	}
 	
 	template<size_t N, typename F, typename ...T> inline void print_members_with_names(ostream& out, vector<string> names, const F& arg, T ...args){
 		out << names[N] << ": ";
-		print_complex_item(out, arg);
+		print_item(out, arg);
 		out << ", ";
 		print_members_with_names<N + 1>(out, names, args...);
 	}

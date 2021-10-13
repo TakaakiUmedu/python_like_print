@@ -97,3 +97,7 @@ ver.1.4.1
 ・const& の付け忘れを追加
 ・begin()とend()の型が異なるiteratorに対応
 
+ver.1.5
+・ostream << objectが出来る型を絞り込んだり、begin()とend()がある型に対する絞り込みを付け加えたりSFINAEを改良。より多くの形式のobjectをprint()できるように
+・using namespace std;を削除して個別にusing
+・拡張子をhppに変更

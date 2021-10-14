@@ -101,3 +101,6 @@ ver.1.5
 ・ostream << objectが出来る型を絞り込んだり、begin()とend()がある型に対する絞り込みを付け加えたりSFINAEを改良。より多くの形式のobjectをprint()できるように
 ・using namespace std;を削除して個別にusing
 ・拡張子をhppに変更
+
+ver.1.6
+・mapの出力方針を変更。begin()、end()で取れるiteratorがpairを返す場合にmapの類と見做して「{」～「}」で囲んで出力する方針に

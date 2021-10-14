@@ -83,22 +83,33 @@ template<char SEP = ' ', char END = '\n', typename ...A> inline void printo(std:
 
 // 宣言を纏めて
 namespace python_like_print{
-	static bool print_char_as_int = false;
-	
 	using std::string, std::basic_ostream, std::ostream, std::cout, std::endl;
 	using std::pair, std::tuple, std::vector, std::tuple_size, std::get;
-	using std::declval, std::enable_if_t, std::is_same_v, std::remove_reference_t, std::is_lvalue_reference_v;
+	using std::declval, std::enable_if_t, std::is_same_v, std::remove_reference_t, std::is_lvalue_reference_v, std::true_type, std::false_type;
+	static bool print_char_as_int = false;
+	
+	// iteratorの類のように、begin()とend()が付いている場合に、*begin()の型を取得するためのクラス
+	template<typename T,
+	         typename B = decltype(declval<T>().begin()),
+	         typename E = decltype(declval<T>().end()),
+	         typename I = decltype(declval<B>().operator++()),
+	         typename C = decltype(static_cast<bool>(declval<B>() != declval<E>())),
+	         typename V = decltype(*declval<B>())>
+	struct iterator_return_type{
+		using type = enable_if_t<is_same_v<C, bool>, V>;
+	};
+	
+	// pairかどうか判定
+	template<typename T> struct is_pair: false_type{};
+	template<typename F, typename S> struct is_pair<pair<F, S>>: true_type{};
 	
 	                                          inline void print_item(ostream& out, const string& value);
 	                                          inline void print_item(ostream& out, const char* value);
 	                                          inline void print_item(ostream& out, char value);
 	template<typename First, typename Second> inline void print_item(ostream& out, const pair<First, Second>& pair);
-	template<typename ...T>                   inline void print_item(ostream &out, const tuple<T...>& tuple);
+	template<typename ...T>                   inline void print_item(ostream& out, const tuple<T...>& tuple);
 	                                          inline void print_item(ostream& out, bool value);
-	template<template<typename, typename, typename...> class Map, typename Key, typename Value, typename ...Parameters, typename C = Map<Key, Value, Parameters...>, typename BeginFirstType = decltype(declval<C>().begin()->first), typename BeginSecondType = decltype(declval<C>().begin()->second), typename EndType = decltype(declval<C>().end())>
-	                                          inline void print_item(ostream& out, const Map<Key, Value, Parameters...>& iterable);
-
-	template<typename T, typename B = decltype(declval<T>().begin()), typename E = decltype(declval<T>().end()), typename I = decltype(declval<B>().operator++()), typename C = decltype(static_cast<bool>(declval<B>() != declval<E>())), typename V = decltype(*declval<B>())>
+	template<typename T, typename V = typename iterator_return_type<T>::type>
 	                                          inline void print_item(ostream& out, const T& t);
 	template<typename T, typename S = decltype(cout << declval<T>()), typename R = enable_if_t<is_same_v<remove_reference_t<S>, basic_ostream<char>> && is_lvalue_reference_v<S>>>
 	                                          inline void print_item(ostream& out, const T& value);
@@ -265,25 +276,20 @@ namespace python_like_print{
 		out << (value ? "true" : "false");
 	}
 	
-	// mapのように、.begin()と.end()が付いていて、.begin()->firstと.begin()->secondがあるもの
-	template<template<typename, typename, typename...> class Map, typename Key, typename Value, typename ...Parameters, typename C = Map<Key, Value, Parameters...>, typename BeginFirstType = decltype(declval<C>().begin()->first), typename BeginSecondType = decltype(declval<C>().begin()->second), typename EndType = decltype(declval<C>().end())>
-	inline void print_item(ostream& out, const Map<Key, Value, Parameters...>& iterable){
-		out << '{';
-		print_all(out, iterable.begin(), iterable.end());
-		out << '}';
-	}
-	
-	// その他、.begin()と.end()が付いているもの
-	template<typename T,
-	         typename B = decltype(declval<T>().begin()),
-	         typename E = decltype(declval<T>().end()),
-	         typename I = decltype(declval<B>().operator++()),
-	         typename C = decltype(static_cast<bool>(declval<B>() != declval<E>())),
-	         typename V = decltype(*declval<B>())>
+	// .begin()と.end()が付いているものは順に表示。中身がpairの場合はmapの類と見做して{}で、それ以外は[]で囲む
+	template<typename T, typename V = typename iterator_return_type<T>::type>
 	inline void print_item(ostream& out, const T& iterable){
-		out << '[';
+		if constexpr(is_pair<V>::value){
+			out << '{';
+		}else{
+			out << '[';
+		}
 		print_all(out, iterable.begin(), iterable.end());
-		out << ']';
+		if constexpr(is_pair<V>::value){
+			out << '}';
+		}else{
+			out << ']';
+		}
 	}
 	
 	// その他、<< で出力できるもの(できないものはエラー)

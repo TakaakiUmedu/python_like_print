@@ -1,3 +1,5 @@
+// https://github.com/TakaakiUmedu/python_like_print
+
 #ifndef PYTHON_LIKE_PRINT
 #define PYTHON_LIKE_PRINT
 
@@ -15,7 +17,7 @@
 #include <iostream>
 #include <tuple>
 #ifdef USE_PYTHON_LIKE_PRINT
-#include "print.h"
+#include "print.hpp"
 #else
 template<char SEP = ' ', char END = '\n', class... A> inline void print(A& ...){}
 template<char SEP = ' ', char END = '\n', class... A> inline void printe(A& ...){}
@@ -197,7 +199,7 @@ namespace atcoder{
 #define lazy_segtree lazy_segtree_vectorizable
 #endif
 #ifdef ATCODER_SEGTREE_HPP
-	template <class S, S (*op)(S, S), S (*e)()> using segtree_vectorizable = python_like_print::vectorizable_collection<S, segtree<int, op, e>>;
+	template <class S, S (*op)(S, S), S (*e)()> using segtree_vectorizable = python_like_print::vectorizable_collection<S, segtree<S, op, e>>;
 #define segtree segtree_vectorizable
 #endif
 }

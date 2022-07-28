@@ -15,9 +15,9 @@ Python風のprint()をC++で定義したもの ver.1.4
 #ifdef USE_PYTHON_LIKE_PRINT
 #include "print.h"
 #else
-template<char SEP = ' ', char END = '\n', class... A> inline void print(A& ...){}
-template<char SEP = ' ', char END = '\n', class... A> inline void printe(A& ...){}
-template<char SEP = ' ', char END = '\n', class... A> inline void printo(A& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void print(A&& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printe(A&& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printo(A&& ...){}
 #define define_print(...)
 #define define_print_with_names(...)
 #define define_to_tuple(...)
@@ -104,3 +104,8 @@ ver.1.5
 
 ver.1.6
 ・mapの出力方針を変更。begin()、end()で取れるiteratorがpairを返す場合にmapの類と見做して「{」～「}」で囲んで出力する方針に
+
+ver.1.6.1
+・USE_PYTHON_LIKE_PRINTを定義しなかった場合のダミー関数が右辺値を受け付けずコンパイルエラーを生じていたのを修正
+・get_fenwick_tree_value()の返り値が定義から抜けていたので追加
+

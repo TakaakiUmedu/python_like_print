@@ -19,9 +19,9 @@
 #ifdef USE_PYTHON_LIKE_PRINT
 #include "print.hpp"
 #else
-template<char SEP = ' ', char END = '\n', class... A> inline void print(A& ...){}
-template<char SEP = ' ', char END = '\n', class... A> inline void printe(A& ...){}
-template<char SEP = ' ', char END = '\n', class... A> inline void printo(A& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void print(A&& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printe(A&& ...){}
+template<char SEP = ' ', char END = '\n', class... A> inline void printo(A&& ...){}
 #define define_print(...)
 #define define_print_with_names(...)
 #define define_to_tuple(...)
@@ -187,7 +187,7 @@ namespace python_like_print{
 // そのままでは無理なので、vectorizableなバージョンを定義して、defineで置き換えてしまう
 namespace atcoder{
 #ifdef ATCODER_FENWICKTREE_HPP
-	template<class S> get_fenwick_tree_value(fenwick_tree<S>& ft, int index){
+	template<class S> S get_fenwick_tree_value(fenwick_tree<S>& ft, int index){
 		return ft.sum(index, index + 1);
 	}
 	template<class S> using fenwick_tree_vectorizable = python_like_print::vectorizable_collection<S, python_like_print::gettable_collection<S, fenwick_tree<S>, get_fenwick_tree_value<S>>>;

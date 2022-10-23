@@ -161,7 +161,7 @@ int main(void){
 	print(zz.to_tuple());
 #endif
 	print(w);
-	
+
 	Pos a = {10, 20, 30};
 	Pos b = {12, 524, 97};
 	std::map<std::string, Pos> p = {{"first", a}, {"second", b}};
